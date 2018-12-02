@@ -49,10 +49,28 @@ def IsMatch(txt, wildcard):
     INPUT:
     txt: string: text to search
     wildcard: string: wildcard applied to text
+    
+    OUTBUT:
+    true or false
     '''
     if type(txt) is not str:
         return fnmatch.fnmatch(str(txt), wildcard)
     return fnmatch.fnmatch(txt, wildcard)
+
+def GetMatches(inplist, wildcard):
+    '''
+    Check if list contains certain elements by wildcard.
+    
+    INPUT:
+    inplist: list with strings to search
+    wildcard: string or list of string: wildcard applied to text
+    
+    OUTPUT:
+    list of matched elements
+    '''
+    wildcards = GetAsList(wildcard)
+    return [x for x in inplist if any(IsMatch(x, wc) for wc in wildcards)]
+    
 
 def PrintLine(text = '-', number = 20, character = '-'):
     print(character * number, text, character * number)
@@ -72,10 +90,10 @@ def TailHead(df, count = 15):
     return pd.concat([df.head(count), df.tail(count)])
 
 def IsNullOrEmpty(inp):
-    return IsNull(inp) or len(inp) == 0
+    return IsNull(inp) or (type(inp) not in NumberTypes and len(inp) == 0)
 
 def IsNull(inp):
-    return inp is None or inp is np.nan
+    return inp is None or (type(inp) in NumberTypes and np.isnan(inp))
 
 def KeepLetters(text):
     '''
@@ -122,19 +140,19 @@ def GetAsList(element):
     returns [x] for string/number, list[x] for list types, 
     list[x.values] for ndarray
     '''
-    if str(type(object)) in [
+    if str(type(element)) in [
         'float', 'float32', 'float64', "<class 'float'>"
         'int', 'int32', 'int64', "<class 'int'>", 
         'str', "<class 'str'>" 
     ]:
-        return [object]
-    if type(object) == list:
-        return object
-    if type(object) == set or type(object) == tuple:
-        return list[object]
-    if type(object) == np.ndarray:
-        return list(object.values)
-    raise ValueError('Type unknown: ', type(object))
+        return [element]
+    if type(element) == list or type(element) == set:
+        return element
+    if type(element) == set or type(element) == tuple:
+        return list[element]
+    if type(element) == np.ndarray:
+        return list(element.values)
+    raise ValueError('Type unknown: ', type(element))
     
 def AnalyzeColumn(df, column, analyzeNan = True, analyzeVc = True):
     '''
@@ -256,7 +274,26 @@ def AnalyzeValueCounts(df, columns = None, types = None, considerMaxValues = 20)
         PrintLine('', number = 10, character = '!')
     PrintLine('Dataframe value counts analysis finished')
     
+def AnalyzeDataTypes(df):
+    '''
+    INPUT:
+    df: Dataframe
+    column: column name or list of names to Analyze
+    analyzeNan: bool
+    analyzeVec: bool
+    '''
+    PrintLine('Analysing fatatypes/s')
+    tmpdir = {}
     
+    for col in df.columns:
+        dtype = df[col].dtype
+        if dtype in tmpdir.keys():
+            tmpdir[dtype] += 1
+        else:
+            tmpdir[dtype] = 1
+    for k, v in tmpdir.items():
+        print(k, ': ', v)
+    PrintLine('Finished analysing datatypes')    
     
 def AnalyzeDataFrame(df):
     '''
@@ -270,6 +307,7 @@ def AnalyzeDataFrame(df):
     
     print('Number of duplicate rows: ', df.shape[0] - df.drop_duplicates().shape[0])
     
+    AnalyzeDataTypes(df)
     AnalyzeNanColumns(df)
     AnalyzeValueCounts(df)
     
@@ -330,7 +368,7 @@ def AnalyzeEqualColumns(df1, df2):
     PrintLine('Finished comparing dataframes:')
 
 
-def ApplyBinaryEncoding(ser):
+def ApplyBinaryEncoding(serinp):
     '''
     INPUT:
     df: Dataframe
@@ -340,20 +378,29 @@ def ApplyBinaryEncoding(ser):
     returns dataframe with newcolumn where 1 means value from column
             contains an item from values
     '''
-    if ser is None:
+    if serinp is None:
         print('Cannot apply BinaryEncoding: Series is none')
-        return ser
+        return serinp
     
+    ser = serinp.copy(deep = True)
     setValues = set([x for x in ser.unique() if not IsNull(x)])
     if len(setValues) < 2:
         print('Column contains max 1 value')
         return ser
     
-    tmpdic = {}
-    for ind, val in enumerate(setValues):
-        tmpdic[val] = ind
-    
-    return ser.apply(lambda x: x if not x in setValues else tmpdic[x])
+    print('Binary encoding column: ', serinp.name)
+    try:
+        tmpdic = {}
+        for ind, val in enumerate(setValues):
+            tmpdic[val] = ind
+        vc1 = ser.value_counts()
+        sernew = ser.apply(lambda x: x if not x in setValues else tmpdic[x])
+        vc2 = sernew.value_counts()
+        print('Old value counts: ', vc1)
+        print('New value counts: ', vc2)
+        return sernew
+    except:
+        print('Error applying binary encoding on column: ', ser.name)
     
 def AppendColumnByValuesInCell(df, column, newcolumn, values):
     '''
