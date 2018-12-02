@@ -952,33 +952,47 @@ def ReduceDimensions_PCA(df, n_comp = None, columns = None):
     dfcopy = _pca.fit_transform(dfcopy)
     return pd.DataFrame(dfcopy), _pca
     
-def PCAPlotExplainedVariances(pca, features = None):
+def PCAPlotExplainedVariances(pca, top = None):
     '''
     INPUT:
     pca: PCA components
     features: Number of features to analyze
     '''
     variances = [val / 100 for val in pca.explained_variance_]
-    if features is None or features <= 0:
-        features = len(variances)
+    if top is None or top <= 0:
+        top = len(variances)
     plt.title('Analysis of principal components')
     plt.ylabel('Explained Variance')
     plt.xlabel('Number of Components')
-    _ = plt.bar(range(0, features), variances[:features])
+    _ = plt.bar(range(0, top), variances[:top])
     
-def PCAPlotCumulatedVariances(pca, features = None):
+def PCAPlotCumulatedVariances(pca, top = None):
     '''
     INPUT:
     pca: PCA components
     features: Number of features to analyze
     '''
     variances = [val / 100 for val in pca.explained_variance_]
-    if features is None or features <= 0:
-        features = len(variances)
+    if top is None or top <= 0:
+        top = len(variances)
     plt.title('Analysis of principal components')
     plt.ylabel('Cumulated Explained Variance')
     plt.xlabel('Number of Components')
-    _ = plt.plot(range(0, features), np.cumsum(variances)[:features])
+    _ = plt.plot(range(0, top), np.cumsum(variances)[:top])
+
+def PCAPlotCumulatedVarianceRatios(pca, top = None):
+    '''
+    INPUT:
+    pca: PCA components
+    features: Number of features to analyze
+    '''
+    if top is None or top <= 0:
+        top = len(pca.components_)
+    plt.title('Analysis of principal components')
+    plt.ylabel('Cumulative Explained Variance Ratio')
+    plt.xlabel('Number of Components')
+    _ = plt.plot(range(0, top), np.cumsum(pca.explained_variance_ratio_[:top]))
+
 
 def RemoveAllRowsHavingAnyMissingValue(df, log = True):
     '''
