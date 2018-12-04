@@ -89,6 +89,21 @@ def TailHead(df, count = 15):
     count = min(abs(count) if count != 0 else 15, df.shape[0])
     return pd.concat([df.head(count), df.tail(count)])
 
+def WCS(df, wildcards):
+    '''
+    Perform wildcard search on column names
+    
+    INPUT:
+    df: Dataframe
+    wildcards: string or list of strings
+    
+    OUTPUT:
+    Dataframe with matched columns
+    '''
+    wildcards = GetAsList(wildcards)
+    matches = GetMatches(df.columns, wildcards)
+    return df[matches]
+
 def IsNullOrEmpty(inp):
     return IsNull(inp) or (type(inp) not in NumberTypes and len(inp) == 0)
 
@@ -282,7 +297,7 @@ def AnalyzeDataTypes(df):
     analyzeNan: bool
     analyzeVec: bool
     '''
-    PrintLine('Analysing fatatypes/s')
+    PrintLine('Analysing data types/s')
     tmpdir = {}
     
     for col in df.columns:
