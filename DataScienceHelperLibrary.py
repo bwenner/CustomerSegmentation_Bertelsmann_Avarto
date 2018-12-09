@@ -53,11 +53,13 @@ def IsMatch(txt, wildcard):
     OUTBUT:
     true or false
     '''
-    if type(txt) is not str:
-        return fnmatch.fnmatch(str(txt), wildcard)
-    return fnmatch.fnmatch(txt, wildcard)
+    wildcard = GetAsList(wildcard)
+    checks = []
+    for wc in wildcard:
+        checks.append(fnmatch.fnmatch(txt, wc))
+    return any(checks)
 
-def GetMatches(inplist, wildcard):
+def GetMatches(inplist, wildcard, without = None):
     '''
     Check if list contains certain elements by wildcard.
     
@@ -69,13 +71,18 @@ def GetMatches(inplist, wildcard):
     list of matched elements
     '''
     wildcards = GetAsList(wildcard)
-    return [x for x in inplist if any(IsMatch(x, wc) for wc in wildcards)]
+    if not without is None:
+        without = GetAsList(without)
+    ret = [x for x in inplist if any(IsMatch(x, wc) for wc in wildcards)]
+    if without is None:
+        return ret
+    return [x for x in ret if not any(IsMatch(x, wo) for wo in without)]
     
 
-def PrintLine(text = '-', number = 20, character = '-'):
-    print(character * number, text, character * number)
+def PrintLine(text = '-', n = 20, character = '-'):
+    print(character * n, text, character * n)
 
-def TailHead(df, count = 15):
+def TailHead(df, n = 15):
     '''
     Returns concatination from dataframes head and tail.
     
@@ -86,8 +93,8 @@ def TailHead(df, count = 15):
     OUTPUT:
     dataframe: concatination of both
     '''
-    count = min(abs(count) if count != 0 else 15, df.shape[0])
-    return pd.concat([df.head(count), df.tail(count)])
+    n = min(abs(n) if n != 0 else 15, df.shape[0])
+    return pd.concat([df.head(n), df.tail(n)])
 
 def WCS(df, wildcards):
     '''
@@ -398,7 +405,7 @@ def ApplyBinaryEncoding(serinp):
         return serinp
     
     ser = serinp.copy(deep = True)
-    setValues = set([x for x in ser.unique() if not IsNull(x)])
+    setValues = set(sorted([x for x in ser.unique() if not IsNull(x)]))
     if len(setValues) < 2:
         print('Column contains max 1 value')
         return ser
