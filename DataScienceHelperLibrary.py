@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sb
-
+import sqlalchemy
 
 import glob
 import os
@@ -36,10 +36,10 @@ from sklearn.linear_model import LinearRegression
 from sklearn.decomposition import PCA
 
 
-
-
 NumberTypes = [float, int, np.int64, np.int32, np.float32, np.float64]
 
+def bla():
+    ProgressBar.ProgressBar
 
 
 def IsMatch(txt, wildcard):
@@ -73,14 +73,19 @@ def GetMatches(inplist, wildcard, without = None):
     wildcards = GetAsList(wildcard)
     if not without is None:
         without = GetAsList(without)
-    ret = [x for x in inplist if any(IsMatch(x, wc) for wc in wildcards)]
+    ret = [str(x) for x in inplist if any(IsMatch(x, wc) for wc in wildcards)]
     if without is None:
         return ret
-    return [x for x in ret if not any(IsMatch(x, wo) for wo in without)]
+    return [str(x) for x in ret if not any(IsMatch(x, wo) for wo in without)]
     
 
 def PrintLine(text = '-', n = 20, character = '-'):
     print(character * n, text, character * n)
+
+def PrintEncapsulate(text, n = 20, character = '-', header = ''):
+    PrintLine(header, n = n, character = character)
+    print(text)
+    PrintLine(n = n, character = character)
 
 def TailHead(df, n = 15):
     '''
@@ -174,7 +179,18 @@ def GetAsList(element):
         return list[element]
     if type(element) == np.ndarray:
         return list(element.values)
+    if type(element) == sqlalchemy.sql.elements.quoted_name:
+        return element
     raise ValueError('Type unknown: ', type(element))
+
+
+def ReduceMemory(df):
+    '''
+    Tries to reduce memory based on min/max values.
+    '''
+    
+    
+    
     
 def AnalyzeColumn(df, column, analyzeNan = True, analyzeVc = True):
     '''
@@ -409,6 +425,9 @@ def ApplyBinaryEncoding(serinp):
     if len(setValues) < 2:
         print('Column contains max 1 value')
         return ser
+    if len(setValues) == 2 and all(x in setValues for x in [0, 1]):
+        print('Values already 0/1 encoded in column: ', ser.name)
+        return
     
     print('Binary encoding column: ', serinp.name)
     try:
@@ -1099,14 +1118,13 @@ def RemoveColumnsByWildcard(df, wildcards):
     if wildcards is None or len(wildcards) < 1:
         raise ValueError('no wildcards passed: ', wildcards)
     rem = []
-    if type(wildcards) is not list:
-        wildcards = [wildcards]
-    allColumns = list(df.columns)
+    wildcards = GetAsList(wildcards)
+    allColumns = df.columns
     PrintLine('Start finding and removing columns matchting to wildcards: {}'.format(wildcards))
     dfcopy = df.copy(deep = True)
     for col in allColumns:
         for wc in wildcards:
-            if IsMatch(col, wc):
+            if IsMatch(str(col), str(wc)):
                 rem.append(col)
                 break
     keep = [ ac for ac in allColumns if ac not in rem ]
