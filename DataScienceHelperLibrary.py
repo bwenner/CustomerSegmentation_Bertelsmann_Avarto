@@ -35,6 +35,8 @@ import sys
 from sklearn.linear_model import LinearRegression
 from sklearn.decomposition import PCA
 
+from sklearn.cluster import MiniBatchKMeans
+
 
 NumberTypes = [float, int, np.int64, np.int32, np.float32, np.float64]
 
