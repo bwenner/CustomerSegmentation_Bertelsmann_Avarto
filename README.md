@@ -10,6 +10,11 @@
 In this project, Arvato Bertelsmann provides real live data describing the German population and a customer data set representing the customers of an mail-order company called AZ Direkt.
 The goal is to identify customers from AZ Direkt in the general population and create a model that predicts if a person is likely to turn into a customer.
 
+To achieve this, I will use KMeans. KMeans is a clustering method - an unsupervised learning algorithm - to create customer segments. In contrast to hierachical clustering, the execution time of KMeans is linear to the amount of data instead of being quadratic. Because of the huge amount of data, I decided to use KMeans. 
+Fitting KMeans to the demographic data and predict clusters for both the german population and the customers, I expect that there will be clusters in the customer data with a much higher proportion of people than the demographic data (a sign that these people are persons of interest), and clusters with a lower proportion of people (indicating that these people are out of interest for the company).
+But before applying this method to the data, I use principal component analysis (PCA) to reduce the dimensions of the data set. On the one hand, this will optimize the KMeans execution time, on the other hand this method calculates so called eigen vectors. An eigen vector is a vector containing weights for each feature. These weights describe how much the relevant feature increase this component. By sorting the absolute values in such a vector, the features can be summarized to a so called "latent feature" that gives a more general description of people who can be described. (Below, there is an example discussion on a latent feature describing pensioners who like to drive sport cars).
+The last part of this project is to build a binary classification model that predicts a persons likeliness to become a customer or not. To achieve this, I will train several supervised learning models that can be used for binary classification in hope to find a model with a good accuracy that does not overfit or underfit. The precondition is that important/informative features have not beed dropped. If so, the model won't be able to make good predictions.
+
 3. Problem Description
 
 Profit and growth is the main goal of each company. Mail-order companies grow by the number of customers (among other AMAZON).
@@ -51,13 +56,24 @@ All these descriptions go with the fact that people in the underrepresented clus
 6. Supervised Model
 
 Metrics
-The accuracy will be measured with the AUC-ROC curve. This curve is constructed by plotting the false positive rate against the true positive rate. A perfect classifier creates a dot in the top left corner (100% correct predicted with 0 false positives). The worse the model, the closer to the diagonal. We use this accuracy measurement because the Kaggle training data is extremely unbalanced.
+
+The PCA object has an implemented score function and provides probalistic interpretation for each component. These values are stored in the attribute "explained_variance_ratio_" and represent the amount of variance each component explains regarding to the original data set. 
+To determine the required amount of principal components, I will set a minimum limit (minimum % of original data that I intend to explain with the components), iterate over all explained_variance_ratio_ values and stop until the sum is bigger or equal than my limit. With that number, PCA will be fitted again to the data.
+Regression metrics like Mean Average Error, Root Mean Square Error, .. cannot be used as we have a binary classification problem in the supervised part. 
+For classification, there are metrics like Precison-Recall, ROC_AUC, Log-Loss but we will use ROC_AUC curve. 
+AUC_ROC stands for "Area Under the Receiver Operating Characteristic curve". ROC plots the true positive rate against the false positive rate by various thresholds and the area under this curve describes the accuracy of the model as the maximum area is 1x1. A perfect classifier creates a dot in the top left corner (100% correct predicted with 0 false positives). The worse the model, the closer to the diagonal. 
+In contrast to Log-Loss, F1-Score and Accuracy, ROC_AUC does not rely on the threshold set for classification. The predicted absolute values are irrelevant, the ranks of the predictions are taken into consideration.
 
 Models
-I decided to use ensemble methods because they combine different models to one. For example the basis model that RandomForest/Adaboost/GradientBoosting-Classifiers build on is decision trees. They can be used for regression as well as for classification that is needed here.
+
+I decided to use ensemble methods because they combine different models to one. A nice example I read was this one: Assume that you are ill and the morbus is unknown, would you rather go to a single doctor who is professional in one area, or would you rather contact a group of doctors where everyone is professional in his own métier?
+This is the idea behind ensemble methods. EM use different classifiers during training and those classifiers with the best accuracy will be used. That means that ensemble methods 
+stabilize machine learn algorithms and increase their accuracy
+and help to reduce overfitting as well as the variance of single estimators because several estimates from several models are combined.
+
+The basis model that RandomForest/Adaboost/GradientBoosting-Classifiers build on is decision trees. They can be used for regression as well as for classification that is needed here.
 Beside these three models, I added LogisticRegression because I was interested into that performance.
 
 Result kaggle
-As expected, the kaggle score is not very good, circa 60,4%. I guess that I dropped an important column...
 
-My main goal is to pass this project and the nano degree program. Until 15th january (deadline for this project), I will try to find the column or columns and to improve my results.
+My second approach incresed the previous score by 18% up to 78%.
